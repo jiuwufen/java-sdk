@@ -12,7 +12,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
@@ -174,12 +174,25 @@ public class JiuWuFenClient {
             String signature = SignatureUtil.generateSignature(params, merchantSecret, platformSecret);
             params.put("token", signature);
 
-            // 构建请求体
-            String jsonBody = gson.toJson(params);
+            // timestamp、token 拼到 URL 查询参数（与网关/GenSign 合并 GET 参数一致）；body 仅业务字段
+            HttpUrl httpUrl = HttpUrl.parse(baseUrl + path);
+            if (httpUrl == null) {
+                throw new ApiException(-1, "Invalid URL: " + baseUrl + path, "");
+            }
+            Object ts = params.get("timestamp");
+            String url = httpUrl.newBuilder()
+                    .addQueryParameter("timestamp", ts == null ? "" : String.valueOf(ts))
+                    .addQueryParameter("token", signature)
+                    .build()
+                    .toString();
+
+            Map<String, Object> bodyParams = new LinkedHashMap<>(params);
+            bodyParams.remove("timestamp");
+            bodyParams.remove("token");
+            String jsonBody = gson.toJson(bodyParams);
             RequestBody body = RequestBody.create(jsonBody, JSON);
 
             // 构建请求
-            String url = baseUrl + path;
             Request request = new Request.Builder()
                     .url(url)
                     .post(body)

@@ -5,6 +5,7 @@ import com.google.gson.GsonBuilder;
 
 import javax.crypto.Cipher;
 import javax.crypto.spec.SecretKeySpec;
+import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.util.*;
@@ -35,6 +36,9 @@ public class SignatureUtil {
                                           String merchantSecret, 
                                           String platformSecret) {
         try {
+            // Gson/objectToMap 会把 JSON 数字变成 Double，toJson 会得到 12.0；与 Go json.Marshal 的 12 不一致，签名会错
+            normalizeIntegralNumbersInPlace(params);
+
             // 1. 获取所有 Keys 并排序（排除 token 本身）
             List<String> keys = new ArrayList<>();
             for (String key : params.keySet()) {
@@ -44,16 +48,15 @@ public class SignatureUtil {
             }
             Collections.sort(keys);
             
-            // 2. 拼接参数值
+            // 2. 拼接参数值（与 Go GenSign.addRawParams + GetSign 一致：仅 string 原样拼接，其余走 JSON；nil 为字面量 null）
             StringBuilder paramsStr = new StringBuilder();
             for (String key : keys) {
                 Object value = params.get(key);
                 if (value instanceof String) {
                     paramsStr.append(value);
-                } else if (value != null) {
-                    // 复杂类型转 JSON（需要递归排序 Key）
-                    String json = GSON.toJson(sortMapKeys(value));
-                    paramsStr.append(json);
+                } else {
+                    // 与 Go json.Marshal(sortMapKeys(v)) 等价：嵌套 map 按 key 排序后再序列化（Gson 对 Map 插入序敏感）
+                    paramsStr.append(GSON.toJson(sortMapKeys(value)));
                 }
             }
             
@@ -69,6 +72,67 @@ public class SignatureUtil {
         } catch (Exception e) {
             throw new RuntimeException("Generate signature failed", e);
         }
+    }
+
+    /**
+     * 递归将「数学上为整数」的 {@link Double}/{@link Float} 转为 {@link Long}，与 Go {@code json.Unmarshal} 后再 {@code json.Marshal}
+     * 对整数值的序列化习惯对齐，保证签名字符串一致。
+     * <p>
+     * 会就地修改 {@code params} 及其嵌套的 {@link Map}、{@link List}。
+     */
+    @SuppressWarnings("unchecked")
+    public static void normalizeIntegralNumbersInPlace(Map<String, Object> params) {
+        if (params == null) {
+            return;
+        }
+        for (Map.Entry<String, Object> e : params.entrySet()) {
+            e.setValue(normalizeIntegralRecursive(e.getValue()));
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private static Object normalizeIntegralRecursive(Object o) {
+        if (o instanceof Map) {
+            Map<String, Object> m = (Map<String, Object>) o;
+            for (Map.Entry<String, Object> e : m.entrySet()) {
+                e.setValue(normalizeIntegralRecursive(e.getValue()));
+            }
+            return m;
+        }
+        if (o instanceof List) {
+            List<Object> list = (List<Object>) o;
+            for (int i = 0; i < list.size(); i++) {
+                list.set(i, normalizeIntegralRecursive(list.get(i)));
+            }
+            return list;
+        }
+        return normalizeIntegralLeaf(o);
+    }
+
+    private static Object normalizeIntegralLeaf(Object o) {
+        if (o instanceof Double) {
+            double d = (Double) o;
+            if (Double.isFinite(d) && d == Math.rint(d) && d >= Long.MIN_VALUE && d <= Long.MAX_VALUE) {
+                return (long) d;
+            }
+            return o;
+        }
+        if (o instanceof Float) {
+            float f = (Float) o;
+            if (Float.isFinite(f) && f == Math.rint(f) && f >= Long.MIN_VALUE && f <= Long.MAX_VALUE) {
+                return (long) f;
+            }
+            return o;
+        }
+        if (o instanceof BigDecimal) {
+            BigDecimal bd = (BigDecimal) o;
+            try {
+                return bd.longValueExact();
+            } catch (ArithmeticException ignored) {
+                return o;
+            }
+        }
+        return o;
     }
     
     /**

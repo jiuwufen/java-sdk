@@ -3,6 +3,7 @@ package com.jiuwufen.sdk.util;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -82,5 +83,59 @@ class SignatureUtilTest {
 
         // 相同参数应该生成相同的签名
         assertEquals(signature1, signature2);
+    }
+
+    /**
+     * Gson 反序列化后的 Double 整数值（如 12.0）应与 Long/Integer 12 生成相同签名，避免签名字符串里出现 12.0。
+     */
+    @Test
+    void testGenerateSignature_doubleWholeNumberMatchesLong() {
+        Map<String, Object> withLong = new HashMap<>();
+        withLong.put("imei", "x");
+        withLong.put("sku_id", 12L);
+
+        Map<String, Object> withDouble = new HashMap<>();
+        withDouble.put("imei", "x");
+        withDouble.put("sku_id", 12.0);
+
+        String sigLong = SignatureUtil.generateSignature(withLong, MERCHANT_SECRET, PLATFORM_SECRET);
+        String sigDouble = SignatureUtil.generateSignature(withDouble, MERCHANT_SECRET, PLATFORM_SECRET);
+
+        assertEquals(sigLong, sigDouble);
+    }
+
+    @Test
+    void testGenerateSignature_nestedMapDoubleWholeNumberMatchesLong() {
+        Map<String, Object> innerLong = new HashMap<>();
+        innerLong.put("qty", 100L);
+        Map<String, Object> rootLong = new HashMap<>();
+        rootLong.put("detail", Arrays.asList(innerLong));
+
+        Map<String, Object> innerDouble = new HashMap<>();
+        innerDouble.put("qty", 100.0);
+        Map<String, Object> rootDouble = new HashMap<>();
+        rootDouble.put("detail", Arrays.asList(innerDouble));
+
+        assertEquals(
+                SignatureUtil.generateSignature(rootLong, MERCHANT_SECRET, PLATFORM_SECRET),
+                SignatureUtil.generateSignature(rootDouble, MERCHANT_SECRET, PLATFORM_SECRET));
+    }
+
+    /**
+     * Go json.Marshal(nil) 为 null；若 Java 跳过 null，签名字符串会少一段，与 GenSign 不一致。
+     */
+    @Test
+    void testGenerateSignature_topLevelNullContributesNullLiteral() {
+        Map<String, Object> withNull = new HashMap<>();
+        withNull.put("a", null);
+        withNull.put("b", "x");
+
+        Map<String, Object> withoutA = new HashMap<>();
+        withoutA.put("b", "x");
+
+        String sigWithNull = SignatureUtil.generateSignature(withNull, MERCHANT_SECRET, PLATFORM_SECRET);
+        String sigWithout = SignatureUtil.generateSignature(withoutA, MERCHANT_SECRET, PLATFORM_SECRET);
+
+        assertNotEquals(sigWithout, sigWithNull);
     }
 }
