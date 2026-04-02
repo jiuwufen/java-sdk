@@ -67,6 +67,7 @@ public class JiuWuFenClient {
     private final InventoryApi inventoryApi;
     private final OrderApi orderApi;
     private final DeliveryApi deliveryApi;
+    private final DigitalProductApi digitalProductApi;
 
     /**
      * 私有构造函数，使用 Builder 模式创建实例
@@ -104,6 +105,7 @@ public class JiuWuFenClient {
         this.inventoryApi = new InventoryApi(this);
         this.orderApi = new OrderApi(this);
         this.deliveryApi = new DeliveryApi(this);
+        this.digitalProductApi = new DigitalProductApi(this);
     }
 
     /**
@@ -139,6 +141,13 @@ public class JiuWuFenClient {
      */
     public DeliveryApi delivery() {
         return deliveryApi;
+    }
+
+    /**
+     * 3C 数码相关 API
+     */
+    public DigitalProductApi digitalProduct() {
+        return digitalProductApi;
     }
 
     /**
@@ -226,6 +235,11 @@ public class JiuWuFenClient {
      * 将对象转换为 Map
      */
     private Map<String, Object> objectToMap(Object obj) {
+        if (obj instanceof Map) {
+            @SuppressWarnings("unchecked")
+            Map<String, Object> map = (Map<String, Object>) obj;
+            return new java.util.LinkedHashMap<>(map);
+        }
         String json = gson.toJson(obj);
         return gson.fromJson(json, new com.google.gson.reflect.TypeToken<Map<String, Object>>() {
         }.getType());
