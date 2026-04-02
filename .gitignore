@@ -41,6 +41,9 @@ Thumbs.db
 # Test
 *.test
 
+# 本地真实 HTTP 集成测试（含敏感环境/密钥，不上传 GitHub）
+src/test/java/com/jiuwufen/sdk/api/DigitalProductApiIntegrationTest.java
+
 # Temporary
 tmp/
 temp/
