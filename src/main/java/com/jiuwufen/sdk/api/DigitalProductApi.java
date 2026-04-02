@@ -5,12 +5,10 @@ import com.jiuwufen.sdk.JiuWuFenClient;
 import com.jiuwufen.sdk.exception.ApiException;
 import com.jiuwufen.sdk.model.digitalproduct.*;
 
-import java.util.Map;
-
 /**
  * 3C 数码相关 API（质检项、IMEI、一键出售、后验签收、绑扣等）。
  * <p>
- * 复杂嵌套请求体（如一键出售）请使用 {@link Map} 构造与文档一致的 JSON 结构。
+ * 一键出售 v1/v2 使用 {@link DigitalSuperSaleRequest}、{@link DigitalSuperSaleV2Request} 及配套嵌套类型，与开放平台文档字段一致。
  */
 public class DigitalProductApi {
 
@@ -36,16 +34,26 @@ public class DigitalProductApi {
 
     /**
      * 一键出售 - 平台商家 (DigitalSuperSale v1.0)
+     *
+     * @see DigitalSuperSaleRequest
+     * @see DigitalSuperSaleV1ExaminingItem
+     * @see DigitalSuperSaleV1SecondExaminingItem
+     * @see DigitalSuperSaleV1ThirdExaminingItem
+     * @see DigitalSuperSaleAddress
      */
-    public JsonObject digitalSuperSale(Map<String, Object> body) throws ApiException {
-        return client.execute("/api_tob/digitalSuperSale/v1.0", body, JsonObject.class);
+    public JsonObject digitalSuperSale(DigitalSuperSaleRequest request) throws ApiException {
+        return client.execute("/api_tob/digitalSuperSale/v1.0", request, JsonObject.class);
     }
 
     /**
      * 一键出售 - 自研商家 (DigitalSuperSale v2.0)
+     *
+     * @see DigitalSuperSaleV2Request
+     * @see DigitalSuperSaleV2ExaminingItem
+     * @see DigitalSuperSaleAddress
      */
-    public JsonObject digitalSuperSaleV2(Map<String, Object> body) throws ApiException {
-        return client.execute("/api_tob/digitalSuperSale/v2.0", body, JsonObject.class);
+    public JsonObject digitalSuperSaleV2(DigitalSuperSaleV2Request request) throws ApiException {
+        return client.execute("/api_tob/digitalSuperSale/v2.0", request, JsonObject.class);
     }
 
     /**
