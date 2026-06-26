@@ -62,16 +62,16 @@ import com.jiuwufen.sdk.model.merchant.*;
 // 发送短信验证码
 SendSMSRequest smsRequest = new SendSMSRequest();
 smsRequest.setMobile("13800000000");
-SendSMSResponse smsResponse = client.merchant().sendSMSCaptcha(smsRequest);
-System.out.println("验证码已发送: " + smsResponse.getReqId());
+client.merchant().sendSMSCaptcha(smsRequest);
+System.out.println("验证码已发送");
 
 // 校验短信验证码
 CheckSMSRequest checkRequest = new CheckSMSRequest();
 checkRequest.setMobile("13800000000");
 checkRequest.setCaptcha("123456");
 CheckSMSResponse checkResponse = client.merchant().checkSMSCaptcha(checkRequest);
-System.out.println("应用标识: " + checkResponse.getData().getHeaderName());
-System.out.println("应用密钥: " + checkResponse.getData().getSecretKey());
+System.out.println("应用标识: " + checkResponse.getHearderName());
+System.out.println("应用密钥: " + checkResponse.getSecretKey());
 ```
 
 ### 3. 商品管理
@@ -114,7 +114,7 @@ item.setSalableQty(90L);
 request.setDetail(Arrays.asList(item));
 
 InventorySyncResponse response = client.inventory().syncInventory(request);
-System.out.println("库存同步完成: " + response.getData().getSyncResult());
+System.out.println("库存同步完成: " + response.getSyncResult());
 ```
 
 ### 5. 订单查询
@@ -129,7 +129,7 @@ request.setPage(1L);
 request.setPageSize(20L);
 
 ConsignOrderInfoResponse response = client.order().getConsignOrderInfo(request);
-for (ConsignOrderInfoResponse.OrderItem order : response.getData().getOrderList()) {
+for (ConsignOrderInfoResponse.OrderItem order : response.getOrderList()) {
     System.out.println("订单号: " + order.getSellOrderNumber());
     System.out.println("状态: " + order.getStatusDesc());
 }
@@ -230,8 +230,8 @@ JiuWuFenClient client = JiuWuFenClient.builder()
 import com.jiuwufen.sdk.exception.ApiException;
 
 try {
-    AddOrderGoodsResponse response = client.goods().addOrderGoods(request);
-    System.out.println("成功: " + response.getMsg());
+    client.goods().addOrderGoods(request);
+    System.out.println("成功");
 } catch (ApiException e) {
     System.err.println("错误码: " + e.getCode());
     System.err.println("错误信息: " + e.getMessage());
@@ -260,7 +260,7 @@ BuyerAddressResponse response = client.order().getBuyerAddress(request);
 // 解密地址
 byte[] key = "your-platform-secret".getBytes();
 String decryptedAddress = SignatureUtil.decryptAddress(
-    response.getData().getAddress(), 
+    response.getAddress(),
     key
 );
 System.out.println("买家地址: " + decryptedAddress);

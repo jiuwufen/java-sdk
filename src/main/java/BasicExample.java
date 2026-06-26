@@ -31,8 +31,8 @@ public class BasicExample {
             System.out.println("=== 示例1: 发送短信验证码 ===");
             SendSMSRequest smsRequest = new SendSMSRequest();
             smsRequest.setMobile("13800000000");
-            SendSMSResponse smsResponse = client.merchant().sendSMSCaptcha(smsRequest);
-            System.out.println("验证码已发送, req_id: " + smsResponse.getReqId());
+            client.merchant().sendSMSCaptcha(smsRequest);
+            System.out.println("验证码已发送（req_id 等在网关 JSON 外层，可开 debug 查看）");
 
             // 示例2: 校验短信验证码
             System.out.println("\n=== 示例2: 校验短信验证码 ===");
@@ -41,8 +41,8 @@ public class BasicExample {
             checkRequest.setCaptcha("123456");
             CheckSMSResponse checkResponse = client.merchant().checkSMSCaptcha(checkRequest);
             System.out.println("校验成功!");
-            System.out.println("应用标识: " + checkResponse.getData().getHeaderName());
-            System.out.println("应用密钥: " + checkResponse.getData().getSecretKey());
+            System.out.println("应用标识: " + checkResponse.getHearderName());
+            System.out.println("应用密钥: " + checkResponse.getSecretKey());
 
             // 示例3: 新增商品
             System.out.println("\n=== 示例3: 新增商品 ===");

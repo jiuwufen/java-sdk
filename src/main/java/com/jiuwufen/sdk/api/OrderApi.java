@@ -1,8 +1,12 @@
 package com.jiuwufen.sdk.api;
 
+import com.google.gson.reflect.TypeToken;
 import com.jiuwufen.sdk.JiuWuFenClient;
 import com.jiuwufen.sdk.exception.ApiException;
 import com.jiuwufen.sdk.model.order.*;
+
+import java.lang.reflect.Type;
+import java.util.List;
 
 /**
  * 订单管理 API
@@ -38,9 +42,10 @@ public class OrderApi {
     }
 
     /**
-     * 获取订单列表（挂售）
+     * 获取订单列表（挂售）。接口 {@code data} 为数组，与 {@link HangSaleGetOrderListItem} 列表对应。
      */
-    public GetOrderListResponse getOrderList(GetOrderListRequest request) throws ApiException {
-        return client.execute("/api_tob/getOrderList/v1.0", request, GetOrderListResponse.class);
+    public List<HangSaleGetOrderListItem> getOrderList(GetOrderListRequest request) throws ApiException {
+        Type dataType = TypeToken.getParameterized(List.class, HangSaleGetOrderListItem.class).getType();
+        return client.execute("/api_tob/getOrderList/v1.0", request, dataType);
     }
 }

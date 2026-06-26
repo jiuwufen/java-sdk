@@ -36,6 +36,51 @@ MODELS = {
                 ])
             ]
         },
+        "SkuListRequest": {
+            "fields": [
+                ("child_category_id_list", "List<Long>", "三级类目列表"),
+                ("page", "Long", "页码"),
+                ("page_size", "Long", "每页数量"),
+                ("brand_name", "String", "品牌名称"),
+                ("brand_id", "Long", "品牌 ID"),
+                ("title", "String", "SKU 名称"),
+                ("code", "String", "货号"),
+                ("spu_id", "Long", "SPU ID"),
+                ("last_id", "Long", "最后一条记录 ID (分页游标)"),
+                ("ids", "List<Long>", "SKU ID 列表"),
+                ("must_status", "Long", "启用状态"),
+            ]
+        },
+        "SkuListResponse": {
+            "fields": [
+                ("total", "Long", "总数"),
+                ("list", "List<SkuListItem>", "商品列表"),
+            ],
+            "inner_classes": [
+                ("SkuListItem", [
+                    ("sku_id", "Long", "SKU ID"),
+                    ("title", "String", "商品标题"),
+                    ("property_value", "String", "销售属性字符串"),
+                    ("sku_properties", "List<PropertyItem>", "销售属性详情"),
+                    ("code", "String", "商品货号"),
+                    ("root_category_id", "Long", "一级类目 ID"),
+                    ("root_category_name", "String", "一级类目名称"),
+                    ("middle_category_id", "Long", "二级类目 ID"),
+                    ("middle_category_name", "String", "二级类目名称"),
+                    ("child_category_id", "Long", "三级类目 ID"),
+                    ("child_category_name", "String", "三级类目名称"),
+                    ("brand_id", "Long", "品牌 ID"),
+                    ("brand_name", "String", "品牌名称"),
+                    ("spu_id", "Long", "SPU ID"),
+                    ("spu_source", "String", "SPU 来源"),
+                    ("spu_src_orig", "String", "SPU 原始来源"),
+                ]),
+                ("PropertyItem", [
+                    ("property_name", "String", "属性名"),
+                    ("property_value", "String", "属性值"),
+                ])
+            ]
+        },
         "AddOrderGoodsResponse": {
             "fields": [
                 ("status", "Integer", "状态码"),

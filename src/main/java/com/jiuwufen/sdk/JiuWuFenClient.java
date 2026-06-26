@@ -2,6 +2,7 @@ package com.jiuwufen.sdk;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.reflect.TypeToken;
 import com.jiuwufen.sdk.api.*;
 import com.jiuwufen.sdk.exception.ApiException;
 import com.jiuwufen.sdk.model.common.CommonResponse;
@@ -12,6 +13,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.lang.reflect.Type;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -226,6 +228,85 @@ public class JiuWuFenClient {
                                 CommonResponse.class, responseClass).getType());
 
                 // 检查业务状态码
+                if (commonResponse.getStatus() != 0) {
+                    throw new ApiException(
+                            commonResponse.getStatus(),
+                            commonResponse.getMsg(),
+                            commonResponse.getReqId());
+                }
+
+                return commonResponse.getData();
+            }
+        } catch (IOException e) {
+            logger.error("Network error", e);
+            throw new ApiException(-1, "Network error: " + e.getMessage(), "");
+        } catch (Exception e) {
+            logger.error("Unexpected error", e);
+            throw new ApiException(-1, "Unexpected error: " + e.getMessage(), "");
+        }
+    }
+
+    /**
+     * 执行 HTTP 请求，{@code data} 使用任意 Gson {@link Type}（例如 {@code List<Item>}）。
+     */
+    @SuppressWarnings("unchecked")
+    public <T> T execute(String path, Object requestBody, Type dataType) throws ApiException {
+        try {
+            Map<String, Object> params = objectToMap(requestBody);
+
+            if (!params.containsKey("timestamp")) {
+                params.put("timestamp", String.valueOf(System.currentTimeMillis() / 1000));
+            }
+
+            String signature = SignatureUtil.generateSignature(params, merchantSecret, platformSecret);
+            params.put("token", signature);
+
+            HttpUrl httpUrl = HttpUrl.parse(baseUrl + path);
+            if (httpUrl == null) {
+                throw new ApiException(-1, "Invalid URL: " + baseUrl + path, "");
+            }
+            Object ts = params.get("timestamp");
+            String url = httpUrl.newBuilder()
+                    .addQueryParameter("timestamp", ts == null ? "" : String.valueOf(ts))
+                    .addQueryParameter("token", signature)
+                    .build()
+                    .toString();
+
+            Map<String, Object> bodyParams = new LinkedHashMap<>(params);
+            bodyParams.remove("timestamp");
+            bodyParams.remove("token");
+            String jsonBody = gson.toJson(bodyParams);
+            RequestBody body = RequestBody.create(jsonBody, JSON);
+
+            Request request = new Request.Builder()
+                    .url(url)
+                    .post(body)
+                    .addHeader("Content-Type", "application/json; charset=UTF-8")
+                    .addHeader("x-request-sign-version", "m1")
+                    .addHeader("fen95-external-third-erp-name", erpName)
+                    .addHeader("fen95-external-third", thirdPartyId)
+                    .build();
+
+            if (debug) {
+                logger.debug("Request URL: {}", url);
+                logger.debug("Request Body: {}", jsonBody);
+            }
+
+            try (Response response = httpClient.newCall(request).execute()) {
+                String responseBody = response.body() != null ? response.body().string() : "";
+
+                if (debug) {
+                    logger.debug("Response Code: {}", response.code());
+                    logger.debug("Response Body: {}", responseBody);
+                }
+
+                if (!response.isSuccessful()) {
+                    throw new ApiException(-1, "HTTP Error: " + response.code(), "");
+                }
+
+                Type responseType = TypeToken.getParameterized(CommonResponse.class, dataType).getType();
+                CommonResponse<T> commonResponse = gson.fromJson(responseBody, responseType);
+
                 if (commonResponse.getStatus() != 0) {
                     throw new ApiException(
                             commonResponse.getStatus(),

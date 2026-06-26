@@ -26,6 +26,13 @@ public class GoodsApi {
     }
 
     /**
+     * 查询SKU列表（通用）
+     */
+    public SkuListResponse getSkuList(SkuListRequest request) throws ApiException {
+        return client.execute("/api_tob/skuList/v1.0", request, SkuListResponse.class);
+    }
+
+    /**
      * 新增商品
      */
     public AddOrderGoodsResponse addOrderGoods(AddOrderGoodsRequest request) throws ApiException {
